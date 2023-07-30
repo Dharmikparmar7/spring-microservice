@@ -1,13 +1,18 @@
 package com.adiths.inventoryservice.controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,13 +29,13 @@ public class InventoryController {
     
     private final InventoryService inventoryService;
 
-    @GetMapping("{productId}")
+    @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public boolean isInStock(@PathVariable("productId") String productId){
-        return inventoryService.isInStock(productId);
+    public Map<String, Inventory> isInStock(@RequestParam List<String> productIdList){
+        return inventoryService.isInStock(productIdList);
     }
 
-    @GetMapping
+    @GetMapping("/all")
     public List<Inventory> getAllInventory(){
         return inventoryService.findAll();
     }
@@ -40,4 +45,14 @@ public class InventoryController {
     public void saveInventory(@RequestBody InventoryRequest inventoryRequest){
         inventoryService.saveInventory(inventoryRequest);
     }
+
+    // @PutMapping("/{id}")
+    // public ResponseEntity<Inventory> updateInventory(@PathVariable Long id, @RequestBody Inventory updatedInventory) {
+    //     if (!id.equals(updatedInventory.getId())) {
+    //         return ResponseEntity.badRequest().build();
+    //     }
+
+    //     Inventory updatedItem = inventoryService.updateInventory(updatedInventory);
+    //     return ResponseEntity.ok(updatedItem);
+    // }
 }
