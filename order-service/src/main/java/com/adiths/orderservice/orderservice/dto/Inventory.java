@@ -3,12 +3,12 @@ package com.adiths.orderservice.orderservice.dto;
 import java.math.BigDecimal;
 
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
+@Data
 public class Inventory {
     private String productId;
 

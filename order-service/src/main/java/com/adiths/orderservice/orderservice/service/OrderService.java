@@ -47,57 +47,54 @@ public class OrderService {
 
     @Transactional
     public Order createOrder(OrderRequest orderRequest) {
-        List<Items> items = orderRequest.getItems().stream().map(this::mapToEntity).toList();
+        log.info("orderService");
+        
+        // Map<String, Inventory> inventoriesMap = webClient
+        //         .get()
+        //         .uri(UriBuilder -> UriBuilder.path("/inventory").queryParam("productIdList", productIdList).build())
+        //         .retrieve()
+        //         .bodyToMono(new ParameterizedTypeReference<Map<String, Inventory>>() {
+        //         })
+        //         .block();
 
-        List<String> productIdList = items.stream().map(this::mapToInventory).toList();
-
-        Map<String, Inventory> inventoriesMap = webClient
-                .get()
-                .uri(UriBuilder -> UriBuilder.path("/inventory").queryParam("productIdList", productIdList).build())
+        List<Inventory> inventories = orderRequest.getItems().stream().map(this::mapToEntity).toList();
+        
+        try {
+            String isInStock = webClient.post()
+                .uri("http://localhost:8081/api/inventory/check")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(inventories), Inventory.class)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Inventory>>() {
-                })
+                .bodyToMono(String.class)
                 .block();
-
-        boolean isInStock = true;
-        // productIdList.removeAll(productIdList);
-
-        for (int i = 0; i < items.size(); i++) {
-            if (inventoriesMap.get(items.get(i).getProductId()) == null) {
-                isInStock = false;
-                // productIdList.add(items.get(i).getProductId().toString());
-            } else if(inventoriesMap.get(items.get(i).getProductId()).getQuantity().compareTo(items.get(i).getQuantity()) < 0) {
-                isInStock = false;
-            }
+                
+            log.info(isInStock);
+        } catch (Exception e) {
+            // Handle the exception (e.g., log the error, throw a custom exception, etc.)
+            // For demonstration purposes, we'll simply print the error message here.
+            System.err.println("Error while performing the request: " + e.getMessage());
         }
 
-        if (!isInStock) {
-            log.info("Order is not placed !");
-            // productIdList.forEach(id -> log.info(id));
-            log.info("Some products are not in stock");
-            return Order.builder().build();
-        }
 
-        Order order = Order.builder()
-                .orderNumber(orderRequest.getOrderNumber())
-                .items(items)
-                .build();
+        // Order order = Order.builder()
+        //         .orderNumber(orderRequest.getOrderNumber())
+        //         .items(items)
+        //         .build();
 
-        items.forEach(item -> item.setOrder(order));
+        // items.forEach(item -> item.setOrder(order));
 
-        orderRepository.save(order);
-        log.info("Order Placed");
-        return order;
+        // orderRepository.save(order);
+        // log.info("Order Placed");
+        return null;
     }
 
-    private Items mapToEntity(ItemsDto itemsDto) {
-        Items item = new Items();
+    private Inventory mapToEntity(ItemsDto itemsDto) {
+        Inventory inventory = new Inventory();
 
-        item.setProductId(itemsDto.getProductId());
-        item.setPrice(itemsDto.getPrice());
-        item.setQuantity(itemsDto.getQuantity());
+        inventory.setProductId(itemsDto.getProductId());
+        inventory.setQuantity(itemsDto.getQuantity());
 
-        return item;
+        return inventory;
     }
 
     private String mapToInventory(Items item) {

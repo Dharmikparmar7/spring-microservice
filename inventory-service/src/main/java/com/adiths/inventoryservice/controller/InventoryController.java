@@ -46,6 +46,12 @@ public class InventoryController {
         inventoryService.saveInventory(inventoryRequest);
     }
 
+    @PostMapping("/check")
+    @ResponseStatus(HttpStatus.CREATED)
+    public String checkStock(@RequestBody List<InventoryRequest> inventoryRequest){
+        return inventoryService.checkStock(inventoryRequest);
+    }
+
     // @PutMapping("/{id}")
     // public ResponseEntity<Inventory> updateInventory(@PathVariable Long id, @RequestBody Inventory updatedInventory) {
     //     if (!id.equals(updatedInventory.getId())) {
