@@ -9,6 +9,7 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -57,34 +58,40 @@ public class OrderService {
         //         })
         //         .block();
 
+        List<Items> items = orderRequest.getItems().stream().map(this::mapToDto).toList();
+
         List<Inventory> inventories = orderRequest.getItems().stream().map(this::mapToEntity).toList();
         
         try {
-            String isInStock = webClient.post()
+            ResponseEntity<String> isInStock = webClient.post()
                 .uri("http://localhost:8081/api/inventory/check")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Mono.just(inventories), Inventory.class)
+                .body(Mono.just(inventories), List.class)
                 .retrieve()
-                .bodyToMono(String.class)
+                .toEntity(String.class)
                 .block();
                 
-            log.info(isInStock);
+            log.info("return :::" + isInStock.getBody());
+
+            if(isInStock.getBody().equals("OK"))
+            {
+                Order order = Order.builder()
+                        .orderNumber(orderRequest.getOrderNumber())
+                        .items(items)
+                        .build();
+        
+                items.forEach(item -> item.setOrder(order));
+        
+                orderRepository.save(order);
+                log.info("Order Placed");
+                return order;
+            }
         } catch (Exception e) {
             // Handle the exception (e.g., log the error, throw a custom exception, etc.)
             // For demonstration purposes, we'll simply print the error message here.
-            System.err.println("Error while performing the request: " + e.getMessage());
+            System.err.println("RETURN ::: Error while performing the request: " + e.getMessage());
+            return null;
         }
-
-
-        // Order order = Order.builder()
-        //         .orderNumber(orderRequest.getOrderNumber())
-        //         .items(items)
-        //         .build();
-
-        // items.forEach(item -> item.setOrder(order));
-
-        // orderRepository.save(order);
-        // log.info("Order Placed");
         return null;
     }
 
@@ -99,5 +106,15 @@ public class OrderService {
 
     private String mapToInventory(Items item) {
         return new String(item.getProductId());
+    }
+
+    private Items mapToDto(ItemsDto itemsDto){
+        Items items = new Items();
+
+        items.setPrice(itemsDto.getPrice());
+        items.setProductId(itemsDto.getProductId());
+        items.setQuantity(itemsDto.getQuantity());
+
+        return items;
     }
 }

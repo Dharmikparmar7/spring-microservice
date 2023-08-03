@@ -6,14 +6,18 @@ import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import org.hibernate.validator.internal.engine.constraintvalidation.ConstraintValidatorContextImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.adiths.inventoryservice.dto.InventoryRequest;
+import com.adiths.inventoryservice.exception.OutOfStockException;
 import com.adiths.inventoryservice.model.Inventory;
 import com.adiths.inventoryservice.repository.InventoryRepository;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,37 +34,29 @@ public class InventoryService {
                 .collect(Collectors.toMap(Inventory::getProductId, inventory -> inventory));
     }
 
-    @Transactional()
-    public String checkStock(List<InventoryRequest> orderInventories) {
-        List<Inventory> inventories = inventoryRepository.findByProductIdIn(orderInventories.stream().map(inventory -> inventory.getProductId()).toList());
-        Map<String, Inventory> inventoriesMap = inventories.stream().collect(Collectors.toMap(Inventory::getProductId, inventory -> inventory));
+    @Transactional(rollbackFor = ConstraintViolationException.class)
+    public String checkStock(List<InventoryRequest> orderInventories){
+        log.info("inventory service called");
 
-        boolean isInStock = true;
+        List<Inventory> inventories = inventoryRepository.findByProductIdIn(orderInventories.stream().map(inventory -> inventory.getProductId()).toList());
 
         for (int i = 0; i < inventories.size(); i++) {
-            if (inventoriesMap.get(inventories.get(i).getProductId()) == null) {
-                isInStock = false;
-            } else if(inventoriesMap.get(inventories.get(i).getProductId()).getQuantity().compareTo(orderInventories.get(i).getQuantity()) < 0) {
-                isInStock = false;
-            }
-            else{
-                inventories.get(i).setQuantity(inventories.get(i).getQuantity() - orderInventories.get(i).getQuantity());
-            }
-        }
+            // Inventory inventory = inventories.get(i);
+            // int orderedQuantity = orderInventories.get(i).getQuantity();
+            // int availableQuantity = inventory.getQuantity();
 
-        if (!isInStock) {
-            return "Not in Stock";
-        }
-        else
-        {
-            afterCommit(inventories);
-            return "OK";
-        }
-    }
+            // if (availableQuantity < orderedQuantity) {
+            //     throw new ConstraintViolationException("Out of Stock", null);
+            // }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void afterCommit(List<Inventory> inventories) {
+            // inventory.setQuantity(availableQuantity - orderedQuantity);
+            inventories.get(i).setQuantity(inventories.get(i).getQuantity() - orderInventories.get(i).getQuantity());
+        }
+        
         inventoryRepository.saveAll(inventories);
+        log.info("OK");
+
+        return "OK";
     }
 
     public List<Inventory> findAll() {
