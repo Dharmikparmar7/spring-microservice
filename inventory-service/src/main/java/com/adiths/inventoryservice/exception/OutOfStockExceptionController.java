@@ -11,7 +11,7 @@ import jakarta.validation.ConstraintViolationException;
 public class OutOfStockExceptionController {
 
     @ExceptionHandler(value = ConstraintViolationException.class)
-    public ResponseEntity<String> exception(RuntimeException exception){
+    public ResponseEntity<String> exception(ConstraintViolationException constraintViolationException){
         return new ResponseEntity<String>("Out of Stock", HttpStatus.NOT_FOUND);
     }
 }
