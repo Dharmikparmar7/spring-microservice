@@ -15,6 +15,7 @@
 	<description>Main project for Spring Boot Microservices</description>
 	<properties>
 		<java.version>17</java.version>
+		<spring-cloud.version>2022.0.4</spring-cloud.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -35,7 +36,20 @@
         <module>product-service</module>
 		<module>inventory-service</module>
 		<module>order-service</module>
+		<module>discovery-server</module>
     </modules>
+
+	<dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring-cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
 	<build>
 		<plugins>

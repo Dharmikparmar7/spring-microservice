@@ -27,7 +27,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
 
     @Autowired
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
 
     public ResponseEntity<List<Order>> getAllOrders() {
         return new ResponseEntity<>(orderRepository.findAll(), HttpStatus.OK);
@@ -42,8 +42,8 @@ public class OrderService {
 
         List<Inventory> inventories = orderRequest.getItems().stream().map(this::mapToInventory).toList();
 
-        ResponseEntity<String> isInStock = webClient.post()
-                .uri("http://localhost:8081/api/inventory/check")
+        ResponseEntity<String> isInStock = webClientBuilder.build().post()
+                .uri("http://inventory-service/api/inventory/check")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(Mono.just(inventories), List.class)
                 .retrieve()
@@ -66,12 +66,7 @@ public class OrderService {
     }
 
     private Inventory mapToInventory(ItemsDto itemsDto) {
-        Inventory inventory = new Inventory();
-
-        inventory.setProductId(itemsDto.getProductId());
-        inventory.setQuantity(itemsDto.getQuantity());
-
-        return inventory;
+        return Inventory.builder().productId(itemsDto.getProductId()).quantity(itemsDto.getQuantity()).build();
     }
 
     private Items mapToItem(ItemsDto itemsDto) {

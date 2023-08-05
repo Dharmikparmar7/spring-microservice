@@ -3,10 +3,14 @@ package com.adiths.productservice.productservice.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.adiths.productservice.productservice.dto.InventoryRequest;
 import com.adiths.productservice.productservice.dto.ProductRequest;
 import com.adiths.productservice.productservice.dto.ProductResponse;
 import com.adiths.productservice.productservice.model.Product;
@@ -23,46 +27,44 @@ public class ProductService {
 
     private final ProductRepository productRepository;
 
-
     @Autowired
-    private final WebClient webClient;
+    private final WebClient.Builder webClientBuilder;
 
-    public void createProduct(ProductRequest productRequest){
+    public ResponseEntity<HttpStatus> createProduct(ProductRequest productRequest) {
         Product product = Product.builder()
-        .name(productRequest.getName())
-        .description(productRequest.getDescription())
-        .price(productRequest.getPrice())
-        .build();
+                .name(productRequest.getName())
+                .description(productRequest.getDescription())
+                .price(productRequest.getPrice())
+                .build();
 
         productRepository.save(product);
-        log.info("Product with name : {} Created, {}", product.getName(), product.getId());
 
-        productRequest.setProductId(product.getId());
+        InventoryRequest inventoryRequest = InventoryRequest.builder()
+                .productId(product.getId())
+                .quantity(productRequest.getQuantity()).build();
 
-        log.info("productrequest = {}", (productRequest.getProductId()));
+        webClientBuilder.build().post()
+                .uri("http://inventory-service/api/inventory")
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .body(Mono.just(inventoryRequest), InventoryRequest.class)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
 
-        webClient.post()
-            .uri("http://localhost:8081/api/inventory")
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(Mono.just(productRequest), ProductRequest.class)
-            .retrieve()
-            .bodyToMono(Void.class)
-            .block();
-
-        log.info("Inventory added");
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    public List<ProductResponse> getAllProducts(){
+    public ResponseEntity<List<ProductResponse>> getAllProducts() {
         List<Product> products = productRepository.findAll();
-        return products.stream().map(this::mapProductResponse).toList();
+        return new ResponseEntity<>(products.stream().map(this::mapProductResponse).toList(), HttpStatus.OK);
     }
 
-    private ProductResponse mapProductResponse(Product product){
+    private ProductResponse mapProductResponse(Product product) {
         return ProductResponse.builder()
-            .Id(product.getId())
-            .name(product.getName())
-            .description(product.getDescription())
-            .price(product.getPrice())
-            .build();
+                .Id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .build();
     }
 }
