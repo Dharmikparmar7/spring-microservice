@@ -3,6 +3,7 @@ package com.adiths.orderservice.orderservice.service;
 import java.util.List;
 import java.util.Optional;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,6 +23,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class OrderService {
 
     private final OrderRepository orderRepository;
@@ -50,7 +52,12 @@ public class OrderService {
                 .toEntity(String.class)
                 .block();
 
-        if (isInStock.getStatusCode().equals(HttpStatus.OK)) {
+        log.info("return body ::: ");
+        log.info(isInStock.getBody());
+        log.info("return ::: ");
+        log.info(isInStock.getStatusCode().toString());
+
+        if (isInStock != null && isInStock.getStatusCode().equals(HttpStatus.OK)) {
             Order order = Order.builder()
                     .orderNumber(orderRequest.getOrderNumber())
                     .items(items)
